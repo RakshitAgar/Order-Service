@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,5 +100,23 @@ class OrderServiceTest {
         // The exception should be thrown during the execution of addOrder
         assertThrows(InvalidOrderItemCredentials.class, () -> orderService.addOrder(orderRequestDTO));
         verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void testGetAllOrderSuccess() {
+        List<Order> orders = List.of(new Order());
+        when(orderRepository.findAll()).thenReturn(orders);
+
+        List<Order> result = orderService.getAllOrder();
+        assertEquals(orders, result);
+    }
+
+    @Test
+    void testGetAllOrderNotFound() {
+        when(orderRepository.findAll()).thenReturn(Collections.emptyList());
+
+        assertThrows(OrderItemsEmptyException.class, () -> {
+            orderService.getAllOrder();
+        });
     }
 }

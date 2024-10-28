@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,6 +20,9 @@ public class OrderService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private CatalogServiceClient catalogServiceClient;
 
     public Order getOrder(Long orderId) {
         try {
@@ -32,12 +36,29 @@ public class OrderService {
 
     public void addOrder(OrderRequestDTO orderRequestDTO) {
         try {
-            List<OrderItem> orderItems = orderRequestDTO.getOrderItems();
-            if (orderItems.isEmpty()) {
+            List<OrderRequestDTO.OrderItemDTO> orderItemsDTO = orderRequestDTO.getOrderItems();
+            if (orderItemsDTO.isEmpty()) {
                 throw new OrderItemsEmptyException("Order items are empty");
             }
-            List<OrderItem> newOrderItems = orderItems.stream()
-                    .map(item -> new OrderItem(item.getMenuItemId(), item.getMenuItemName(), item.getPrice(), item.getQuantity()))
+
+            // Validate restaurantId
+            List<Map<String, Object>> restaurants = catalogServiceClient.getRestaurants();
+            boolean isValidRestaurant = restaurants.stream()
+                    .anyMatch(restaurant -> restaurant.get("restaurantID").equals(orderRequestDTO.getRestaurantId().intValue()));
+            if (!isValidRestaurant) {
+                throw new InvalidOrderCredentials("Invalid restaurant ID");
+            }
+
+            List<Map<String, Object>> menuItems = catalogServiceClient.getRestaurantById(orderRequestDTO.getRestaurantId());
+
+            List<OrderItem> newOrderItems = orderItemsDTO.stream()
+                    .map(itemDTO -> {
+                        Map<String, Object> menuItem = menuItems.stream()
+                                .filter(mi -> mi.get("id").equals(itemDTO.getMenuItemId().intValue()))
+                                .findFirst()
+                                .orElseThrow(() -> new InvalidOrderItemCredentials("Invalid menu item ID: " + itemDTO.getMenuItemId()));
+                        return new OrderItem(itemDTO.getMenuItemId(), (String) menuItem.get("name"), (Double) menuItem.get("price"), itemDTO.getQuantity());
+                    })
                     .collect(Collectors.toList());
 
             // Create a new Order entity
@@ -55,6 +76,18 @@ public class OrderService {
             throw new InvalidOrderCredentials(e.getMessage());
         } catch (InvalidOrderItemCredentials e) {
             throw new InvalidOrderItemCredentials(e.getMessage());
+        }
+    }
+
+    public List<Order> getAllOrder() {
+        try {
+            List<Order> orders = orderRepository.findAll();
+            if (orders.isEmpty()) {
+                throw new OrderItemsEmptyException("No orders found");
+            }
+            return orders;
+        } catch (OrderItemsEmptyException e) {
+            throw new OrderItemsEmptyException(e.getMessage());
         }
     }
 }

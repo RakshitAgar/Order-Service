@@ -20,6 +20,15 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+    @GetMapping
+    public ResponseEntity<?> getAllOrders() {
+        try {
+            return ResponseEntity.ok(orderService.getAllOrder());
+        } catch (OrderItemsEmptyException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
     // GET /orders
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrders(@PathVariable Long orderId) {

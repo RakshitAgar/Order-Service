@@ -17,6 +17,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -157,5 +159,25 @@ class OrderControllerTest {
                         .content(orderRequestJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Invalid order item credentials"));
+    }
+
+    @Test
+    void testGetAllOrders() throws Exception {
+        List<Order> orders = List.of(new Order());
+
+        when(orderService.getAllOrder()).thenReturn(orders);
+
+        mockMvc.perform(get("/orders"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(orders)));
+    }
+
+    @Test
+    void testGetAllOrdersNotFound() throws Exception {
+        when(orderService.getAllOrder()).thenThrow(new OrderItemsEmptyException("No orders found"));
+
+        mockMvc.perform(get("/orders"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("No orders found"));
     }
 }
