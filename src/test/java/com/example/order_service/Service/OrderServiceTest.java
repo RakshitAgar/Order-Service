@@ -1,6 +1,7 @@
 package com.example.order_service.Service;
 
 import com.example.order_service.DTO.OrderRequestDTO;
+import com.example.order_service.Exceptions.InvalidOrderCredentials;
 import com.example.order_service.Exceptions.InvalidOrderItemCredentials;
 import com.example.order_service.Exceptions.OrderItemsEmptyException;
 import com.example.order_service.Exceptions.OrderNotFoundException;
@@ -13,10 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,6 +24,9 @@ class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private CatalogServiceClient catalogServiceClient;
 
     @InjectMocks
     private OrderService orderService;
@@ -59,12 +60,27 @@ class OrderServiceTest {
 
     @Test
     void testAddOrder_Success() throws Exception {
-        OrderItem orderItem = new OrderItem(1L, "Item1", 10.0, 2);
-        List<OrderItem> orderItems = Arrays.asList(orderItem);
+        OrderRequestDTO.OrderItemDTO orderItemDTO = new OrderRequestDTO.OrderItemDTO();
+        setField(orderItemDTO, "menuItemId", 1L);
+        setField(orderItemDTO, "quantity", 2);
+
+        List<OrderRequestDTO.OrderItemDTO> orderItemsDTO = Arrays.asList(orderItemDTO);
         OrderRequestDTO orderRequestDTO = new OrderRequestDTO();
         setField(orderRequestDTO, "restaurantId", 1L);
         setField(orderRequestDTO, "customerId", 1L);
-        setField(orderRequestDTO, "orderItems", orderItems);
+        setField(orderRequestDTO, "orderItems", orderItemsDTO);
+        setField(orderRequestDTO, "deliveryAddress", "123 Main St");
+
+
+        // Mock the catalogServiceClient to return a valid list of restaurants
+        Map<String, Object> restaurant = Map.of("id", 1);
+        List<Map<String, Object>> restaurants = Arrays.asList(restaurant);
+        when(catalogServiceClient.getRestaurants()).thenReturn(restaurants);
+
+        // Mock the catalogServiceClient to return a valid restaurant with menu items
+        Map<String, Object> menuItem = Map.of("id", 1, "name", "Item1", "price", 10.0);
+        Map<String, Object> restaurantDetails = Map.of("menuItems", Arrays.asList(menuItem));
+        when(catalogServiceClient.getRestaurantById(1L)).thenReturn(restaurantDetails);
 
         orderService.addOrder(orderRequestDTO);
 
@@ -98,7 +114,7 @@ class OrderServiceTest {
         setField(orderRequestDTO, "orderItems", orderItems);
 
         // The exception should be thrown during the execution of addOrder
-        assertThrows(InvalidOrderItemCredentials.class, () -> orderService.addOrder(orderRequestDTO));
+        assertThrows(InvalidOrderCredentials.class, () -> orderService.addOrder(orderRequestDTO));
         verify(orderRepository, never()).save(any(Order.class));
     }
 

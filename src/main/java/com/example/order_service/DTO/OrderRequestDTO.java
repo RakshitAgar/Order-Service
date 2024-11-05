@@ -10,6 +10,7 @@ public class OrderRequestDTO {
     private List<OrderItemDTO> orderItems;
     private Long restaurantId;
     private Long customerId;
+    private String deliveryAddress;
 
     public OrderRequestDTO() {
     }

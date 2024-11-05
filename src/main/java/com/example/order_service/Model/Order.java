@@ -22,14 +22,15 @@ public class Order {
     private Long restaurantId;
     private Long customerId;
     private Double totalPrice;
+    private String deliveryAddress;
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
 
-    public Order(Long restaurantId, Long customerId, List<OrderItem> orderItems) {
-        if(restaurantId == null || customerId == null) {
+    public Order(Long restaurantId, Long customerId, List<OrderItem> orderItems, String deliveryAddress) {
+        if(restaurantId == null || customerId == null || deliveryAddress.isBlank()) {
             throw new InvalidOrderCredentials("Restaurant id and customer id cannot be null");
         }
         if(orderItems == null || orderItems.isEmpty()) {
@@ -38,8 +39,9 @@ public class Order {
         this.restaurantId = restaurantId;
         this.customerId = customerId;
         this.totalPrice = calculateTotalPrice(orderItems);
-        this.status = OrderStatus.CREATED;
+        this.status = OrderStatus.CONFIRMED;
         this.orderItems = orderItems;
+        this.deliveryAddress = deliveryAddress;
     }
 
     private Double calculateTotalPrice(List<OrderItem> orderItems) {

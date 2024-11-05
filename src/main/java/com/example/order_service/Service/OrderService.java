@@ -8,6 +8,7 @@ import com.example.order_service.Exceptions.OrderNotFoundException;
 import com.example.order_service.Model.Order;
 import com.example.order_service.Model.OrderItem;
 import com.example.order_service.Repository.OrderRepository;
+import com.example.order_service.enums.OrderStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,12 +45,13 @@ public class OrderService {
             // Validate restaurantId
             List<Map<String, Object>> restaurants = catalogServiceClient.getRestaurants();
             boolean isValidRestaurant = restaurants.stream()
-                    .anyMatch(restaurant -> restaurant.get("restaurantID").equals(orderRequestDTO.getRestaurantId().intValue()));
+                    .anyMatch(restaurant -> restaurant.get("id").equals(orderRequestDTO.getRestaurantId().intValue()));
             if (!isValidRestaurant) {
                 throw new InvalidOrderCredentials("Invalid restaurant ID");
             }
 
-            List<Map<String, Object>> menuItems = catalogServiceClient.getRestaurantById(orderRequestDTO.getRestaurantId());
+            Map<String, Object> restaurant = catalogServiceClient.getRestaurantById(orderRequestDTO.getRestaurantId());
+            List<Map<String, Object>> menuItems = (List<Map<String, Object>>) restaurant.get("menuItems");
 
             List<OrderItem> newOrderItems = orderItemsDTO.stream()
                     .map(itemDTO -> {
@@ -62,7 +64,7 @@ public class OrderService {
                     .collect(Collectors.toList());
 
             // Create a new Order entity
-            Order order = new Order(orderRequestDTO.getRestaurantId(), orderRequestDTO.getCustomerId(), newOrderItems);
+            Order order = new Order(orderRequestDTO.getRestaurantId(), orderRequestDTO.getCustomerId(), newOrderItems, orderRequestDTO.getDeliveryAddress());
 
             // Set the order reference in each OrderItem
             newOrderItems.forEach(item -> item.setOrder(order));
@@ -89,5 +91,12 @@ public class OrderService {
         } catch (OrderItemsEmptyException e) {
             throw new OrderItemsEmptyException(e.getMessage());
         }
+    }
+
+    public void updateOrderStatus(Long orderId, String status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        order.setStatus(OrderStatus.valueOf(status));
+        orderRepository.save(order);
     }
 }

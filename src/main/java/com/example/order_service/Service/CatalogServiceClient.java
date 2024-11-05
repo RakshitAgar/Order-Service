@@ -22,10 +22,10 @@ public class CatalogServiceClient {
         }
     }
 
-    public List<Map<String, Object>> getRestaurantById(Long restaurantId) {
+    public Map<String, Object> getRestaurantById(Long restaurantId) {
         RestTemplate restTemplate = new RestTemplate();
         try {
-            return restTemplate.getForObject(CATALOG_SERVICE_URL + "/" + restaurantId, List.class);
+            return restTemplate.getForObject(CATALOG_SERVICE_URL + "/" + restaurantId, Map.class);
         } catch (Exception e) {
             logger.severe("Error fetching restaurant: " + e.getMessage());
             throw new RuntimeException("Failed to fetch restaurant", e);

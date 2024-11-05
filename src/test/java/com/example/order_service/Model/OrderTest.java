@@ -14,35 +14,35 @@ class OrderTest {
     @Test
     public void testOrderCreation(){
         assertDoesNotThrow(() -> {
-            new Order(1L,1L, List.of(new OrderItem(1L, "Item1", 2, 10)));
+            new Order(1L,1L, List.of(new OrderItem(1L, "Item1", 2, 10)),"Address");
         });
     }
 
     @Test
     public void testOrder_RestaurantIdNull() {
         assertThrows(InvalidOrderCredentials.class , () -> {
-            new Order(null,1L, List.of(new OrderItem(1L, "Item1", 2, 10)));
+            new Order(null,1L, List.of(new OrderItem(1L, "Item1", 2, 10)),"Address");
         });
     }
 
     @Test
     public void testOrder_CustomerIdNull() {
         assertThrows(InvalidOrderCredentials.class , () -> {
-            new Order(1L,null, List.of(new OrderItem(1L, "Item1", 2, 10)));
+            new Order(1L,null, List.of(new OrderItem(1L, "Item1", 2, 10)),"Address");
         });
     }
 
     @Test
     public void testOrder_OrderItemNull() {
         assertThrows(OrderItemsEmptyException.class , () -> {
-            new Order(1L,1L, null);
+            new Order(1L,1L, null,"Address");
         });
     }
 
     @Test
     public void testOrder_OrderItemEmpty() {
         assertThrows(OrderItemsEmptyException.class , () -> {
-            new Order(1L,1L, new ArrayList<>());
+            new Order(1L,1L, new ArrayList<>(),"Address");
         });
     }
 
